@@ -1,0 +1,7 @@
+- [ ] actually default config
+- [ ] actually use utils
+- [ ] massive cleanup
+- [ ] clear out all the todos from the codebase
+- [ ] figure out installation and structure stuff
+- [ ] maybe use plenary.lua or something
+- [ ] write a proper readme
