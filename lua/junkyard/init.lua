@@ -206,7 +206,7 @@ function M.toggle_todo(symbol)
 
 	if line:match("^(%s*%- )%[ %](.*)") then
 		-- nothing -> symbol
-		new_line = line:gsub("^(%s*%- )%[ %](.*)", "%1[".. symbol .. "]%2 {" .. timestamp .. "}")
+		new_line = line:gsub("^(%s*%- )%[ %](.*)", "%1[" .. symbol .. "]%2 {" .. timestamp .. "}")
 	elseif line:match("^(%s*%- )%[[^%s]%](.*)") then
 		-- symbol -> nothing
 		new_line = line:gsub("^(%s*%- )%[[^%s]%](.*)", "%1[ ]%2")

@@ -1,7 +1,6 @@
 local M = {}
 local fn = vim.fn
 
-
 function M.is_valid_date(date_str)
 	if not date_str:match("^%d%d%d%d%-%d%d%-%d%d$") then
 		return false
@@ -84,9 +83,8 @@ function M.get_latest_note(notes_dir)
 		return a > b
 	end)
 
-	return daily_files[1]
+	return notes_dir .. "/" .. daily_files[1] .. ".md"
 end
-
 
 function M.split_lines(text)
 	local lines = {}
