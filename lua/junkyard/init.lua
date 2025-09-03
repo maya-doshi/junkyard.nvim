@@ -1,24 +1,11 @@
 local M = {}
-local api = vim.api
-local fn = vim.fn
 local utils = require("junkyard.utils")
 local config = require("junkyard.config")
 
-M.config = {
-	notes_dir = vim.fn.expand("~/notes"),
-	date_format = "[%Y-%m-%d]",
-	time_format = "%H:%M",
-	datetime_format = "%Y-%m-%d %H:%M",
-	carry_over_todos = true,
-	carry_over_days = 7,
-	auto_save = true,
-}
-
+-- #TODO: figure setting config variables
 function M.setup(opts)
-	M.config = vim.tbl_deep_extend("force", M.config, opts or {})
-
-	if fn.isdirectory(M.config.notes_dir) == 0 then
-		fn.mkdir(M.config.notes_dir, "p")
+	if vim.fn.isdirectory(config.notes_dir) == 0 then
+		vim.fn.mkdir(config.notes_dir, "p")
 	end
 
 	M.setup_commands()
@@ -26,42 +13,42 @@ function M.setup(opts)
 end
 
 function M.setup_commands()
-	api.nvim_create_user_command("JunkyardOpen", function()
+	vim.api.nvim_create_user_command("JunkyardOpen", function()
 		M.open_junkyard()
 	end, { desc = "Open junkyard notes" })
 
-	api.nvim_create_user_command("JunkyardNewDay", function()
+	vim.api.nvim_create_user_command("JunkyardNewDay", function()
 		M.new_day()
 	end, { desc = "Create new day and carry over todos" })
 
-	api.nvim_create_user_command("JunkyardSave", function()
+	vim.api.nvim_create_user_command("JunkyardSave", function()
 		M.save_notes()
 	end, { desc = "Save and split junkyard notes into daily files" })
 
-	api.nvim_create_user_command("JunkyardTodoDone", function()
-		M.todo_done()
+	vim.api.nvim_create_user_command("JunkyardTodoDone", function()
+		utils.todo_done()
 	end, { desc = "Toggle todo item status" })
 
-	api.nvim_create_user_command("JunkyardTodoCancel", function()
-		M.todo_cancel()
+	vim.api.nvim_create_user_command("JunkyardTodoCancel", function()
+		utils.todo_cancel()
 	end, { desc = "Toggle todo item status" })
 
-	api.nvim_create_user_command("JunkyardInsertDate", function()
-		M.insert_date()
+	vim.api.nvim_create_user_command("JunkyardInsertDate", function()
+		utils.insert_date(config.date_format)
 	end, { desc = "Insert current date" })
 
-	api.nvim_create_user_command("JunkyardInsertTime", function()
-		M.insert_time()
+	vim.api.nvim_create_user_command("JunkyardInsertTime", function()
+		utils.insert_time(config.time_format)
 	end, { desc = "Insert current time" })
 end
 
 function M.setup_autocommands()
-	local group = api.nvim_create_augroup("Junkyard", { clear = true })
+	local group = vim.api.nvim_create_augroup("Junkyard", { clear = true })
 
-	if M.config.auto_save then
-		api.nvim_create_autocmd("BufWritePost", {
+	if config.auto_save then
+		vim.api.nvim_create_autocmd("BufWritePost", {
 			group = group,
-			pattern = M.config.notes_dir .. "/*.md",
+			pattern = config.notes_dir .. "/*.md",
 			callback = function()
 				if vim.bo.filetype == "markdown" then
 					M.save_notes()
@@ -72,7 +59,7 @@ function M.setup_autocommands()
 end
 
 function M.open_junkyard()
-	local junkyard_file = M.config.notes_dir .. "/junkyard.md"
+	local junkyard_file = config.notes_dir .. "/junkyard.md"
 
 	M.create_junkyard_view()
 
@@ -84,8 +71,8 @@ function M.open_junkyard()
 end
 
 function M.create_junkyard_view()
-	local junkyard_file = M.config.notes_dir .. "/junkyard.md"
-	local daily_files = utils.get_daily_files(M.config.notes_dir)
+	local junkyard_file = config.notes_dir .. "/junkyard.md"
+	local daily_files = utils.get_daily_files(config.notes_dir)
 
 	local content = {}
 
@@ -94,13 +81,13 @@ function M.create_junkyard_view()
 	end)
 
 	for i, date in ipairs(daily_files) do
-		if i > M.config.carry_over_days then
+		if i > config.carry_over_days then
 			break
 		end
 
-		local file_path = M.config.notes_dir .. "/" .. date .. ".md"
-		if fn.filereadable(file_path) == 1 then
-			local file_content = fn.readfile(file_path)
+		local file_path = config.notes_dir .. "/" .. date .. ".md"
+		if vim.fn.filereadable(file_path) == 1 then
+			local file_content = vim.fn.readfile(file_path)
 
 			table.insert(content, "[[" .. date .. "]]")
 
@@ -114,21 +101,21 @@ function M.create_junkyard_view()
 		end
 	end
 
-	fn.writefile(content, junkyard_file)
+	vim.fn.writefile(content, junkyard_file)
 end
 
 function M.new_day()
 	local today = utils.get_current_date()
-	local today_file = M.config.notes_dir .. "/" .. today .. ".md"
+	local today_file = config.notes_dir .. "/" .. today .. ".md"
 
-	if fn.filereadable(today_file) == 1 then
+	if vim.fn.filereadable(today_file) == 1 then
 		vim.cmd("edit " .. today_file)
 		return
 	end
 
 	local content = { "[[" .. today .. "]]" }
 
-	if M.config.carry_over_todos then
+	if config.carry_over_todos then
 		local incomplete_todos = M.get_incomplete_todos()
 		if #incomplete_todos > 0 then
 			for _, todo in ipairs(incomplete_todos) do
@@ -138,16 +125,16 @@ function M.new_day()
 		end
 	end
 
-	fn.writefile(content, today_file)
+	vim.fn.writefile(content, today_file)
 	vim.cmd("edit " .. today_file)
 
 	vim.cmd("normal! G")
 end
 
 function M.get_incomplete_todos()
-	local last_day = utils.get_latest_note(M.config.notes_dir)
+	local last_day = utils.get_latest_note(config.notes_dir)
 	local incomplete_todos = {}
-	local file_content = fn.readfile(last_day)
+	local file_content = vim.fn.readfile(last_day)
 
 	for _, line in ipairs(file_content) do
 		if line:match("^%s*%- %[ %]") then
@@ -159,13 +146,13 @@ function M.get_incomplete_todos()
 end
 
 function M.save_notes()
-	local junkyard_file = M.config.notes_dir .. "/junkyard.md"
+	local junkyard_file = config.notes_dir .. "/junkyard.md"
 
-	if fn.filereadable(junkyard_file) == 0 then
+	if vim.fn.filereadable(junkyard_file) == 0 then
 		return
 	end
 
-	local content = fn.readfile(junkyard_file)
+	local content = vim.fn.readfile(junkyard_file)
 	local current_date = nil
 	local current_content = {}
 
@@ -187,56 +174,15 @@ function M.save_notes()
 end
 
 function M.save_daily_file(date, content)
-	local file_path = M.config.notes_dir .. "/" .. date .. ".md"
+	local file_path = config.notes_dir .. "/" .. date .. ".md"
 
 	while #content > 0 and content[#content]:match("^%s*$") do
 		table.remove(content)
 	end
 
 	if #content > 0 then
-		fn.writefile(content, file_path)
+		vim.fn.writefile(content, file_path)
 	end
-end
-
-function M.toggle_todo(symbol)
-	local line = api.nvim_get_current_line()
-	local line_num = api.nvim_win_get_cursor(0)[1]
-	local new_line = line
-	local timestamp = utils.get_current_time()
-
-	if line:match("^(%s*%- )%[ %](.*)") then
-		-- nothing -> symbol
-		new_line = line:gsub("^(%s*%- )%[ %](.*)", "%1[" .. symbol .. "]%2 {" .. timestamp .. "}")
-	elseif line:match("^(%s*%- )%[[^%s]%](.*)") then
-		-- symbol -> nothing
-		new_line = line:gsub("^(%s*%- )%[[^%s]%](.*)", "%1[ ]%2")
-		new_line = new_line:gsub(" %{.*%}%s*$", "")
-	end
-
-	api.nvim_buf_set_lines(0, line_num - 1, line_num, false, { new_line })
-end
-
-function M.todo_done()
-	M.toggle_todo("x")
-end
-
-function M.todo_cancel()
-	M.toggle_todo("c")
-end
-
-function M.insert_time()
-	local time = os.date(M.config.time_format)
-	api.nvim_put({ time }, "c", false, true)
-end
-
-function M.insert_date()
-	local date = os.date(M.config.date_format)
-	api.nvim_put({ date }, "c", false, true)
-end
-
-function M.insert_now_playing()
-	-- TODO: use lastfm or mpris or something? either way this is really unecessary
-	api.nvim_put({ "♪ [now playing]" }, "c", false, true)
 end
 
 return M

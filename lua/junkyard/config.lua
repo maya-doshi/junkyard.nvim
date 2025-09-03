@@ -1,16 +1,15 @@
-local M = {}
+local config = {}
 
-M.defaults = {
-	notes_dir = "~/notes",
-
+config = {
+	notes_dir = vim.fn.expand("~/notes"),
 	date_format = "%Y-%m-%d",
 	time_format = "%H:%M",
-	datetime_format = "%Y-%m-%d %H:%M",
-	auto_save = true,
+	datetime_format = "%Y-%m-%d %H:%config",
 	carry_over_todos = true,
-	carryover_days = 1,
-	keymaps = {
-	},
+	carry_over_days = 7,
+	auto_save = true,
+
+	keymaps = {},
 
 	file_extension = ".md",
 
@@ -34,19 +33,9 @@ M.defaults = {
 	},
 }
 
-M.current = {}
-
-function M.init()
-	M.current = vim.deepcopy(M.defaults)
-end
-
-function M.set(config)
-	M.current = vim.tbl_deep_extend("force", M.current, config or {})
-end
-
 -- todo: use this
-function M.validate()
-	local config = M.current
+function config.validate()
+	local config = config.current
 
 	if type(config.notes_dir) ~= "string" or config.notes_dir == "" then
 		vim.notify("junkyard: notes_dir must be a non-empty string", vim.log.levels.ERROR)
@@ -79,30 +68,4 @@ function M.validate()
 	return true
 end
 
-function M.get_notes_dir()
-	return vim.fn.expand(M.current.notes_dir)
-end
-
-function M.get_date_file_path(date)
-	return vim.fn.resolve(M.get_notes_dir() .. "/" .. date .. M.current.file_extension)
-end
-
-function M.get_junkyard_path()
-	return M.get_notes_dir() .. "/junkyard" .. M.current.file_extension
-end
-
-function M.format_date(date, format)
-	date = date or os.time()
-	format = format or M.current.date_format
-	return os.date(format, date)
-end
-
-function M.format_time(time, format)
-	time = time or os.time()
-	format = format or M.current.time_format
-	return os.date(format, time)
-end
-
-M.init()
-
-return M
+return config
