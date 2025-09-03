@@ -5,3 +5,5 @@
 - [ ] figure out installation and structure stuff
 - [ ] maybe use plenary.lua or something
 - [ ] write a proper readme
+- [ ] multiple workspaces (ie a junkyard for different projects)
+  - [ ] support jumping in between them and showing a list
